@@ -1,0 +1,4 @@
+comment = 'PostgreSQL-native command interlock for destructive SQL'
+default_version = '0.1.2'
+relocatable = false
+requires = 'pgcrypto'
