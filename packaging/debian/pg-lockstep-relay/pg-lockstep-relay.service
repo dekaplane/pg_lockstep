@@ -1,0 +1,22 @@
+[Unit]
+Description=pg_lockstep PostgreSQL event relay
+Documentation=https://github.com/dekaplane/pg_lockstep
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+Environment=PG_LOCKSTEP_LOG_LEVEL=INFO
+EnvironmentFile=-/etc/pg-lockstep/relay.env
+ExecStart=/usr/bin/pg-lockstep-relay --dsn ${PG_LOCKSTEP_RELAY_DSN} --log-level ${PG_LOCKSTEP_LOG_LEVEL}
+Restart=on-failure
+RestartSec=5s
+User=postgres
+Group=postgres
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

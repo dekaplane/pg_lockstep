@@ -12,14 +12,23 @@ import json
 import logging
 import os
 import signal
+import select
 import sys
 import time
 from collections import OrderedDict, deque
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Callable
 
-import psycopg
 import requests
+
+try:
+    import psycopg
+
+    PSYCOPG3 = True
+except ImportError:  # pragma: no cover - exercised on distro psycopg2 installs.
+    import psycopg2
+
+    PSYCOPG3 = False
 
 
 LOG = logging.getLogger("pg_lockstep_relay")
@@ -171,12 +180,52 @@ def run(dsn: str) -> int:
         LOG.info("Slack forwarding enabled for channel %s", slack_config.channel)
 
     LOG.info("connecting to Postgres")
+    if PSYCOPG3:
+        return run_psycopg3(dsn, lambda: stop, deduper, limiter, slack_config)
+    return run_psycopg2(dsn, lambda: stop, deduper, limiter, slack_config)
+
+
+def run_psycopg3(
+    dsn: str,
+    stop: Callable[[], bool],
+    deduper: EventDeduper,
+    limiter: RateLimiter,
+    slack_config: SlackConfig | None,
+) -> int:
     with psycopg.connect(dsn, autocommit=True) as conn:
         conn.execute("LISTEN pg_lockstep_events")
         LOG.info("listening on pg_lockstep_events")
-        while not stop:
+        while not stop():
             for notify in conn.notifies(timeout=1, stop_after=1):
                 handle_event(notify.payload, deduper, limiter, slack_config)
+
+    LOG.info("stopped")
+    return 0
+
+
+def run_psycopg2(
+    dsn: str,
+    stop: Callable[[], bool],
+    deduper: EventDeduper,
+    limiter: RateLimiter,
+    slack_config: SlackConfig | None,
+) -> int:
+    conn = psycopg2.connect(dsn)
+    try:
+        conn.set_session(autocommit=True)
+        with conn.cursor() as cur:
+            cur.execute("LISTEN pg_lockstep_events")
+        LOG.info("listening on pg_lockstep_events")
+        while not stop():
+            readable, _, _ = select.select([conn], [], [], 1)
+            if not readable:
+                continue
+            conn.poll()
+            while conn.notifies:
+                notify = conn.notifies.pop(0)
+                handle_event(notify.payload, deduper, limiter, slack_config)
+    finally:
+        conn.close()
 
     LOG.info("stopped")
     return 0

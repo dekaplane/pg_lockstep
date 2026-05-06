@@ -7,3 +7,7 @@ REGRESS_OPTS = --inputdir=tests
 PG_CONFIG ?= pg_config
 PGXS := $(shell $(PG_CONFIG) --pgxs)
 include $(PGXS)
+
+.PHONY: deb
+deb:
+	scripts/build-debs.sh

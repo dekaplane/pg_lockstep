@@ -19,6 +19,39 @@ psql -d postgres -c "CREATE EXTENSION pg_lockstep;"
 psql -d postgres -c "SELECT lockstep.enable('observe');"
 ```
 
+## Debian/Ubuntu Packages
+
+Install the latest GitHub Release package on supported Debian/Ubuntu systems:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/dekaplane/pg_lockstep/main/install.sh | sudo bash
+```
+
+Or install release assets manually:
+
+```sh
+VERSION=0.1.2
+curl -fLO "https://github.com/dekaplane/pg_lockstep/releases/download/v${VERSION}/postgresql-17-pg-lockstep_${VERSION}-1_amd64.deb"
+curl -fLO "https://github.com/dekaplane/pg_lockstep/releases/download/v${VERSION}/pg-lockstep-relay_${VERSION}-1_amd64.deb"
+curl -fLO "https://github.com/dekaplane/pg_lockstep/releases/download/v${VERSION}/SHA256SUMS"
+sha256sum -c SHA256SUMS
+sudo apt install ./postgresql-17-pg-lockstep_${VERSION}-1_amd64.deb
+sudo apt install ./pg-lockstep-relay_${VERSION}-1_amd64.deb
+```
+
+The `.deb` packages install extension files globally for PostgreSQL 16 or 17.
+`CREATE EXTENSION` is still required per database:
+
+```sql
+CREATE EXTENSION IF NOT EXISTS pg_lockstep;
+SELECT lockstep.enable('observe');
+SELECT lockstep.doctor();
+```
+
+V1 SQL/event-trigger mode is database-local. It cannot protect `DROP DATABASE`
+issued from another database, and true superusers can bypass V1 controls. See
+[docs/install-deb.md](docs/install-deb.md) for package install and relay setup.
+
 Upgrade an existing installation:
 
 ```sh
