@@ -4,10 +4,12 @@ DATA = pg_lockstep--0.1.0.sql pg_lockstep--0.1.0--0.1.1.sql pg_lockstep--0.1.1.s
 REGRESS = smoke
 REGRESS_OPTS = --inputdir=tests
 
-PG_CONFIG ?= pg_config
-PGXS := $(shell $(PG_CONFIG) --pgxs)
-include $(PGXS)
-
 .PHONY: deb
 deb:
 	scripts/build-debs.sh
+
+ifeq ($(filter deb,$(MAKECMDGOALS)),)
+PG_CONFIG ?= pg_config
+PGXS := $(shell $(PG_CONFIG) --pgxs)
+include $(PGXS)
+endif
