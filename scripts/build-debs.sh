@@ -133,7 +133,7 @@ main() {
   require_file "relay/pg_lockstep_relay.py"
   require_file "relay/relay.env.example"
   require_file "packaging/debian/pg-lockstep-relay/pg-lockstep-relay.service"
-  compgen -G "${ROOT_DIR}/pg_lockstep--*.sql" >/dev/null || fail "required extension SQL files missing: pg_lockstep--*.sql"
+  compgen -G "${ROOT_DIR}/pg_lockstep--*.sql" >/dev/null || fail "required extension SQL files missing: pg_lockstep--*.sql; restore the release SQL files from git before building packages"
 
   local version
   version="$(resolve_version)"
